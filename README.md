@@ -1,5 +1,3 @@
-Dataset : https://www.cs.toronto.edu/~kriz/cifar.html
-
 ## Check the current status of files
 ```bash
 git status
