@@ -19,4 +19,4 @@ git push origin main
 ```
 
 ## Lab Syllabus
-<img width="1495" height="909" alt="image" src="https://github.com/user-attachments/assets/b99b98f5-ecb8-4b2a-b3cf-dd66b04cf022" />
+<img width="1495" height="909" alt="image" src="https://github.com/user-attachments/assets/9f7dbe11-ca53-4359-9911-81a494212f44" />
