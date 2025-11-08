@@ -17,3 +17,6 @@ git commit -m "your commit message here"
 ```bash
 git push origin main
 ```
+
+## Lab Syllabus
+<img width="1495" height="909" alt="image" src="https://github.com/user-attachments/assets/b99b98f5-ecb8-4b2a-b3cf-dd66b04cf022" />
