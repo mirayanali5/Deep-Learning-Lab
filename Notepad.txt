@@ -1,0 +1,670 @@
+# ==================== 1. TENSOR BASIC OPERATIONS ====================
+import tensorflow as tf
+# Create tensors
+a = tf.constant([1, 2, 3])
+b = tf.constant([4, 5, 6])
+print("Tensor a:", a)
+print("Tensor b:", b)
+print("Add:", tf.add(a, b))
+print("Multiply:", tf.multiply(a, b))
+print("Mean:", tf.reduce_mean(a))
+
+# ==================== 2. TENSOR SPLIT, MERGE & STATISTICS ====================
+
+import tensorflow as tf
+# Create tensor
+t = tf.constant([[1, 2, 3, 4], [5, 6, 7, 8]])
+print("Original:", t)
+# Split
+split = tf.split(t, 2, axis=1)
+print("Split:", split)
+# Merge
+merged = tf.concat(split, axis=1)
+print("Merged:", merged)
+# Statistics
+print("Mean:", tf.reduce_mean(t))
+print("Max:", tf.reduce_max(t))
+print("Min:", tf.reduce_min(t))
+
+
+# ==================== 3. PERCEPTRON FOR IRIS ====================
+import numpy as np
+from sklearn.datasets import load_iris
+
+iris = load_iris()
+X = iris.data[:, :2]                       
+y = (iris.target == 0).astype(int)         
+
+W = np.array([[1.0], [-1.0]])
+b = 0.2
+z = X @ W + b
+
+ypred = (z > 0).astype(int)
+print( "First 10 True labels (Setosa=1, Others=0):", y[:10])
+print("First 10 Predicted outputs:",ypred[:10].flatten())
+
+# ==================== 4. MLP FOR TABULAR DATA ====================
+import pandas as pd
+import numpy as np
+import tensorflow as tf
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+
+X = load_iris().data
+y = load_iris().target
+
+xtrain,xtest,ytrain,ytest= train_test_split(X,y,test_size = 0.2)
+
+activations = ["relu", "sigmoid", "tanh"]
+optimizers = ["sgd", "adam", "rmsprop"]
+
+results = []
+
+for act in activations:
+  for opt in optimizers:
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(32,activation = act),
+        tf.keras.layers.Dense(16,activation=act),
+        tf.keras.layers.Dense(3, activation = "softmax")
+    ])
+    model.compile(optimizer = opt, loss = 'sparse_categorical_crossentropy',metrics = ['accuracy'])
+    model.fit(xtrain,ytrain,epochs = 100, batch_size = 8)
+    loss, acc = model.evaluate(xtest,ytest)
+    results.append((act, loss, acc))
+    print("training with activation",act," optimizer: ",opt)
+    print("testing loss ", loss," testing accuracy= ", acc)
+
+print("\nSummary of Accuracies:")
+for act, opt, acc in results:
+  print(f"Activation={act} | Optimizer={opt} | Accuracy={acc:.4f}")
+
+# ==================== 5. MLP FOR 32x32 IMAGES (CIFAR-10) ====================
+import tensorflow as tf
+import pickle
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+with open("data_batch_1", "rb") as f:
+    batch = pickle.load(f, encoding="bytes")
+
+X = batch[b"data"]
+y = np.array(batch[b"labels"])
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+X_train = X_train / 255.0
+X_test  = X_test  / 255.0
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(128, activation="relu"),
+    tf.keras.layers.Dense(64, activation="relu"),
+    tf.keras.layers.Dense(10, activation="softmax")
+])
+
+model.compile(optimizer="adam",loss="sparse_categorical_crossentropy",metrics=["accuracy"])
+
+model.fit(X_train, y_train, epochs=5, batch_size=128, verbose=1)
+
+loss, acc = model.evaluate(X_test, y_test, verbose=0)
+print(f"Accuracy: {acc*100:.2f}%")
+
+
+model.compile(
+    optimizer="adam",
+    loss="sparse_categorical_crossentropy",
+    metrics=["accuracy"]
+)
+
+
+model.fit(X_train, y_train, epochs=5, batch_size=128, verbose=1)
+
+loss, acc = model.evaluate(X_test, y_test, verbose=0)
+print(f"Accuracy: {acc*100:.2f}%")
+
+# ==================== 6. SIMPLE RNN ====================
+
+import tensorflow as tf
+import pandas as pd
+
+# Load + prepare data
+df = pd.read_csv("netflix_titles.csv.csv").dropna(subset=["description"])
+df["label"] = (df["type"] == "Movie").astype(int)
+
+tokenizer = tf.keras.preprocessing.text.Tokenizer(char_level=True)
+tokenizer.fit_on_texts(df["description"])
+X = tokenizer.texts_to_sequences(df["description"])
+X = tf.keras.preprocessing.sequence.pad_sequences(X, maxlen=100).reshape(-1,100,1)
+y = df["label"].values
+
+# RNN Model
+model = tf.keras.Sequential([
+    tf.keras.layers.SimpleRNN(32, input_shape=(100,1)),
+    tf.keras.layers.Dense(1, activation="sigmoid")
+])
+
+model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+model.fit(X, y, epochs=5, verbose=1)
+
+# Accuracy
+print("Accuracy:", model.evaluate(X, y, verbose=0)[1]* 100)
+
+# 7. Design and implement LSTM model with tensor flow / keras and check accuracy
+import tensorflow as tf
+import pandas as pd
+
+df = pd.read_csv("netflix_titles.csv.csv").dropna(subset=["description"])
+df["label"] = (df["type"] == "Movie").astype(int)
+
+tokenizer = tf.keras.preprocessing.text.Tokenizer(char_level=True)
+tokenizer.fit_on_texts(df["description"])
+X = tokenizer.texts_to_sequences(df["description"])
+
+X = tf.keras.preprocessing.sequence.pad_sequences(X, maxlen=100).reshape(-1,100,1)
+y = df["label"].values
+
+# LSTM Model
+model = tf.keras.Sequential([
+    tf.keras.layers.LSTM(32, input_shape=(100,1)),
+    tf.keras.layers.Dense(1, activation="sigmoid")
+])
+
+model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+model.fit(X, y, epochs=5, verbose=1)
+
+print("Accuracy:", model.evaluate(X, y, verbose=0)[1]*100)
+
+# ==================== 8. GRU MODEL ====================
+
+import tensorflow as tf
+import pandas as pd
+
+# Load + prepare data
+df = pd.read_csv("netflix_titles.csv.csv").dropna(subset=["description"])
+df["label"] = (df["type"] == "Movie").astype(int)
+
+tokenizer = tf.keras.preprocessing.text.Tokenizer(char_level=True)
+tokenizer.fit_on_texts(df["description"])
+X = tokenizer.texts_to_sequences(df["description"])
+
+X = tf.keras.preprocessing.sequence.pad_sequences(X, maxlen=100).reshape(-1,100,1)
+y = df["label"].values
+
+# GRU Model
+model = tf.keras.Sequential([
+    tf.keras.layers.GRU(32, input_shape=(100,1)),
+    tf.keras.layers.Dense(1, activation="sigmoid")
+])
+
+model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+model.fit(X, y, epochs=5, verbose=1)
+
+print("Accuracy:", model.evaluate(X, y, verbose=0)[1]*100)
+
+# ==================== 9. CNN FOR JPG IMAGES (CIFAR-10) ====================
+import tensorflow as tf
+import numpy as np
+import pickle
+from sklearn.model_selection import train_test_split
+
+# Load CIFAR-10 batch
+with open("data_batch_1", "rb") as f:
+    batch = pickle.load(f, encoding="bytes")
+
+X = batch[b"data"].reshape(-1, 32, 32, 3) / 255.0
+y = np.array(batch[b"labels"])
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# CNN Model
+model = tf.keras.Sequential([
+    tf.keras.layers.Conv2D(32, (3,3), activation='relu', input_shape=(32,32,3)),
+    tf.keras.layers.MaxPooling2D(2,2),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(64, activation='relu'),
+    tf.keras.layers.Dense(10, activation='softmax')
+])
+
+model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+model.fit(X_train, y_train, epochs=10, verbose=0)
+
+print("Accuracy:", model.evaluate(X_test, y_test, verbose=0)[1] * 100)
+
+# ==================== 12. Auto encoder to de-noise image ====================
+
+import pickle, numpy as np, matplotlib.pyplot as plt
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D
+
+# Load CIFAR-10 batch
+with open("data_batch_1","rb") as f: 
+  b=pickle.load(f,encoding='bytes')
+X = b[b'data'].reshape(-1,3,32,32).transpose(0,2,3,1)/255.0
+
+# Add Gaussian noise
+X_noisy = np.clip(X + 0.2*np.random.randn(*X.shape),0,1)
+X_train, X_test = X_noisy[:4000], X_noisy[4000:5000]
+Y_train, Y_test = X[:4000], X[4000:5000]
+
+# Build Autoencoder
+inp = Input((32,32,3))
+x = Conv2D(32,3,activation='relu',padding='same')(inp)
+x = MaxPooling2D(2,padding='same')(x)
+x = Conv2D(16,3,activation='relu',padding='same')(x)
+x = MaxPooling2D(2,padding='same')(x)
+x = Conv2D(16,3,activation='relu',padding='same')(x)
+x = UpSampling2D(2)(x)
+x = Conv2D(32,3,activation='relu',padding='same')(x)
+x = UpSampling2D(2)(x)
+out = Conv2D(3,3,activation='sigmoid',padding='same')(x)
+
+auto = Model(inp,out)
+auto.compile('adam','mse')
+auto.fit(X_train,Y_train,epochs=10,batch_size=64,validation_data=(X_test,Y_test),verbose=0)
+
+# Evaluate & visualize
+print("Test MSE:",auto.evaluate(X_test,Y_test,verbose=0))
+decoded = auto.predict(X_test[:10])
+plt.figure(figsize=(10,4))
+for i in range(10):
+    plt.subplot(2,10,i+1); plt.imshow(X_test[i]); plt.axis('off')
+    plt.subplot(2,10,i+11); plt.imshow(decoded[i]); plt.axis('off')
+plt.show()
+
+# ==================== 10 . Minimal CNN for multi-category TIFF images ====================
+
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.regularizers import l2
+
+
+data_dir = "/content/Deep-Learning-Lab/CIFAR10_TIFF"
+img_size = (32, 32)
+batch_size = 32
+
+datagen = ImageDataGenerator(
+    rescale=1./255,
+    validation_split=0.2
+)
+
+train_gen = datagen.flow_from_directory(
+    data_dir,
+    target_size=img_size,
+    batch_size=batch_size,
+    class_mode='categorical',
+    subset='training'
+)
+
+val_gen = datagen.flow_from_directory(
+    data_dir,
+    target_size=img_size,
+    batch_size=batch_size,
+    class_mode='categorical',
+    subset='validation'
+)
+
+model = Sequential([
+    Conv2D(32, (3,3), activation='relu', kernel_regularizer=l2(0.001), input_shape=(32,32,3)),
+    MaxPooling2D((2,2)),
+    Dropout(0.25),
+
+    Conv2D(64, (3,3), activation='relu', kernel_regularizer=l2(0.001)),
+    MaxPooling2D((2,2)),
+    Dropout(0.25),
+
+    Flatten(),
+    Dense(128, activation='relu', kernel_regularizer=l2(0.001)),
+    Dropout(0.5),
+    Dense(train_gen.num_classes, activation='softmax')
+])
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+history = model.fit(
+    train_gen,
+    validation_data=val_gen,
+    epochs=30,
+    verbose = 0
+)
+
+val_loss, val_acc = model.evaluate(val_gen)
+print("Validation Accuracy:", val_acc)
+
+# ==================== 11. CNN architecture (LeNet) ====================
+
+import pickle
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, AveragePooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.callbacks import EarlyStopping
+
+# Load data_batch_1
+with open("data_batch_1", "rb") as f:
+    batch = pickle.load(f, encoding='bytes')
+X = batch[b'data']
+y = np.array(batch[b'labels'])
+
+# Reshape to images (N, 32, 32, 3)
+X_images = X.reshape(-1, 3, 32, 32).transpose(0, 2, 3, 1).astype("float32") / 255.0
+
+# One-hot encode labels
+y_cat = to_categorical(y, num_classes=10)
+
+# Train-Test split
+X_train, X_test, y_train, y_test = train_test_split(X_images, y_cat, test_size=0.2, random_state=42)
+print("Data loaded:", X_train.shape, X_test.shape)
+
+# Build LeNet model
+model = Sequential([
+    Conv2D(6, (5,5), activation='relu', input_shape=(32,32,3), padding='same'),
+    AveragePooling2D(pool_size=(2,2)),
+    Conv2D(16, (5,5), activation='relu'),
+    AveragePooling2D(pool_size=(2,2)),
+    Flatten(),
+    Dense(120, activation='relu'),
+    Dense(84, activation='relu'),
+    Dense(10, activation='softmax')
+])
+
+# Compile model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Early stopping
+early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+
+# Train model
+history = model.fit(X_train, y_train, epochs=30, batch_size=64, validation_split=0.2, callbacks=[early_stop],verbose = 0)
+
+# Evaluate
+test_loss, test_acc = model.evaluate(X_test, y_test)
+print("Test Accuracy:", test_acc)
+
+# ==================== 11. CNN architecture (AlexNet) ====================
+
+import pickle
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.callbacks import EarlyStopping
+
+# Load data_batch_1
+with open("data_batch_1", "rb") as f:
+    batch = pickle.load(f, encoding='bytes')
+X = batch[b'data']
+y = np.array(batch[b'labels'])
+
+# Reshape to images (N, 32, 32, 3)
+X_images = X.reshape(-1, 3, 32, 32).transpose(0, 2, 3, 1).astype("float32") / 255.0
+
+# One-hot encode labels
+y_cat = to_categorical(y, num_classes=10)
+
+# Train-Test split
+X_train, X_test, y_train, y_test = train_test_split(X_images, y_cat, test_size=0.2, random_state=42)
+print("Data loaded:", X_train.shape, X_test.shape)
+
+# Build AlexNet model
+model = Sequential([
+    Conv2D(64, (3,3), activation='relu', padding='same', input_shape=(32,32,3)),
+    MaxPooling2D((2,2)),
+    Conv2D(128, (3,3), activation='relu', padding='same'),
+    MaxPooling2D((2,2)),
+    Conv2D(256, (3,3), activation='relu', padding='same'),
+    Flatten(),
+    Dense(256, activation='relu'),
+    Dropout(0.5),
+    Dense(128, activation='relu'),
+    Dropout(0.5),
+    Dense(10, activation='softmax')
+])
+
+# Compile model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Early stopping
+early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+
+# Train model
+history = model.fit(X_train, y_train, epochs=30, batch_size=64, validation_split=0.2, callbacks=[early_stop],verbose=0)
+
+# Evaluate
+test_loss, test_acc = model.evaluate(X_test, y_test)
+print("Test Accuracy:", test_acc)
+
+# ==================== 11. CNN architecture (ZF-Net) ====================
+
+import pickle
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.callbacks import EarlyStopping
+
+# Load data_batch_1
+with open("data_batch_1", "rb") as f:
+    batch = pickle.load(f, encoding='bytes')
+X = batch[b'data']
+y = np.array(batch[b'labels'])
+
+# Reshape to images (N, 32, 32, 3)
+X_images = X.reshape(-1, 3, 32, 32).transpose(0, 2, 3, 1).astype("float32") / 255.0
+
+# One-hot encode labels
+y_cat = to_categorical(y, num_classes=10)
+
+# Train-Test split
+X_train, X_test, y_train, y_test = train_test_split(X_images, y_cat, test_size=0.2, random_state=42)
+print("Data loaded:", X_train.shape, X_test.shape)
+
+# Build ZF-Net model
+model = Sequential([
+    Conv2D(64, (7,7), strides=2, activation='relu', padding='same', input_shape=(32,32,3)),
+    MaxPooling2D((2,2)),
+    Conv2D(192, (5,5), activation='relu', padding='same'),
+    MaxPooling2D((2,2)),
+    Conv2D(384, (3,3), activation='relu', padding='same'),
+    Flatten(),
+    Dense(256, activation='relu'),
+    Dropout(0.5),
+    Dense(10, activation='softmax')
+])
+
+# Compile model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Early stopping
+early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+
+# Train model
+history = model.fit(X_train, y_train, epochs=30, batch_size=64, validation_split=0.2, callbacks=[early_stop],verbose=0)
+
+# Evaluate
+test_loss, test_acc = model.evaluate(X_test, y_test)
+print("Test Accuracy:", test_acc)
+
+# ==================== 11. CNN architecture (VGG-11) ====================
+
+import pickle
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.callbacks import EarlyStopping
+
+# Load data_batch_1
+with open("data_batch_1", "rb") as f:
+    batch = pickle.load(f, encoding='bytes')
+X = batch[b'data']
+y = np.array(batch[b'labels'])
+
+# Reshape to images (N, 32, 32, 3)
+X_images = X.reshape(-1, 3, 32, 32).transpose(0, 2, 3, 1).astype("float32") / 255.0
+
+# One-hot encode labels
+y_cat = to_categorical(y, num_classes=10)
+
+# Train-Test split
+X_train, X_test, y_train, y_test = train_test_split(X_images, y_cat, test_size=0.2, random_state=42)
+print("Data loaded:", X_train.shape, X_test.shape)
+
+# Build VGG-11 model
+model = Sequential([
+    Conv2D(64, (3,3), activation='relu', padding='same', input_shape=(32,32,3)),
+    MaxPooling2D(pool_size=(2,2)),
+    Conv2D(128, (3,3), activation='relu', padding='same'),
+    MaxPooling2D(pool_size=(2,2)),
+    Conv2D(256, (3,3), activation='relu', padding='same'),
+    MaxPooling2D(pool_size=(2,2)),
+    Flatten(),
+    Dense(256, activation='relu'),
+    Dropout(0.5),
+    Dense(10, activation='softmax')
+])
+
+# Compile model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Early stopping
+early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+
+# Train model
+history = model.fit(X_train, y_train, epochs=30, batch_size=64, validation_split=0.2, callbacks=[early_stop],verbose=0)
+
+# Evaluate
+test_loss, test_acc = model.evaluate(X_test, y_test)
+print("Test Accuracy:", test_acc)
+
+# ==================== 11. CNN architecture (GoogLeNet) ====================
+
+import pickle
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Dropout, Concatenate
+from tensorflow.keras.models import Model
+from tensorflow.keras.callbacks import EarlyStopping
+
+# Load data_batch_1
+with open("data_batch_1", "rb") as f:
+    batch = pickle.load(f, encoding='bytes')
+X = batch[b'data']
+y = np.array(batch[b'labels'])
+
+# Reshape to images (N, 32, 32, 3)
+X_images = X.reshape(-1, 3, 32, 32).transpose(0, 2, 3, 1).astype("float32") / 255.0
+
+# One-hot encode labels
+y_cat = to_categorical(y, num_classes=10)
+
+# Train-Test split
+X_train, X_test, y_train, y_test = train_test_split(X_images, y_cat, test_size=0.2, random_state=42)
+print("Data loaded:", X_train.shape, X_test.shape)
+
+# Define simplified inception block
+def inception_block(x, filters):
+    f1, f3, f5 = filters
+    path1 = Conv2D(f1, (1,1), activation='relu', padding='same')(x)
+    path2 = Conv2D(f3, (3,3), activation='relu', padding='same')(x)
+    path3 = Conv2D(f5, (5,5), activation='relu', padding='same')(x)
+    return Concatenate()([path1, path2, path3])
+
+# Build model
+inputs = Input(shape=(32,32,3))
+x = inception_block(inputs, [32,32,32])
+x = MaxPooling2D(pool_size=(2,2))(x)
+x = Flatten()(x)
+x = Dense(128, activation='relu')(x)
+x = Dropout(0.5)(x)
+outputs = Dense(10, activation='softmax')(x)
+
+model = Model(inputs, outputs)
+
+# Compile model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Early stopping
+early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+
+# Train model
+history = model.fit(X_train, y_train, epochs=30, batch_size=64, validation_split=0.2, callbacks=[early_stop],verbose=0)
+
+# Evaluate
+test_loss, test_acc = model.evaluate(X_test, y_test)
+print("Test Accuracy:", test_acc)
+
+# ==================== 11. CNN architecture (ResNet) ====================
+
+import pickle
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.layers import Input, Conv2D, BatchNormalization, Activation, Add, GlobalAveragePooling2D, Dense, Dropout
+from tensorflow.keras.models import Model
+from tensorflow.keras.callbacks import EarlyStopping
+
+# Load data_batch_1
+with open("data_batch_1", "rb") as f:
+    batch = pickle.load(f, encoding='bytes')
+X = batch[b'data']
+y = np.array(batch[b'labels'])
+
+# Reshape to images (N, 32, 32, 3)
+X_images = X.reshape(-1, 3, 32, 32).transpose(0, 2, 3, 1).astype("float32") / 255.0
+
+# One-hot encode labels
+y_cat = to_categorical(y, num_classes=10)
+
+# Train-Test split
+X_train, X_test, y_train, y_test = train_test_split(X_images, y_cat, test_size=0.2, random_state=42)
+print("Data loaded:", X_train.shape, X_test.shape)
+
+# Define simplified residual block
+def res_block(x, filters):
+    shortcut = x
+    x = Conv2D(filters, (3,3), padding='same')(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = Conv2D(filters, (3,3), padding='same')(x)
+    x = BatchNormalization()(x)
+    x = Add()([shortcut, x])
+    x = Activation('relu')(x)
+    return x
+
+# Build model
+inputs = Input(shape=(32,32,3))
+x = Conv2D(64, (3,3), padding='same', activation='relu')(inputs)
+x = res_block(x, 64)
+x = res_block(x, 64)
+x = GlobalAveragePooling2D()(x)
+x = Dense(128, activation='relu')(x)
+x = Dropout(0.5)(x)
+outputs = Dense(10, activation='softmax')(x)
+
+model = Model(inputs, outputs)
+
+# Compile model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Early stopping
+early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+
+# Train model
+history = model.fit(X_train, y_train, epochs=30, batch_size=64, validation_split=0.2, callbacks=[early_stop],verbose=0)
+
+# Evaluate
+test_loss, test_acc = model.evaluate(X_test, y_test)
+print("Test Accuracy:", test_acc)
+
+
